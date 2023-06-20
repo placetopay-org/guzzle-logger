@@ -1,0 +1,40 @@
+{
+    "name": "placetopay-org/guzzle-logger",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "PlacetopayOrg\\GuzzleLogger\\": "src/"
+        }
+    },
+    "archive": {
+        "exclude": [".git", ".gitignore"]
+    },
+    "authors": [
+        {
+            "name": "Ivan Andres L",
+            "email": "ivan.lopez@evertecinc.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "squizlabs/php_codesniffer": "3.*",
+        "symfony/var-dumper": "^4.2",
+        "friendsofphp/php-cs-fixer": "^3.6",
+        "eduarguz/shift-php-cs": "^3.0",
+        "rector/rector": "^0.17.0"
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --no-coverage tests/",
+        "php-cs-fixer": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php",
+        "rector": "vendor/bin/rector process",
+        "php-lint": [
+            "composer php-cs-fixer",
+            "composer rector"
+        ]
+    }
+}
