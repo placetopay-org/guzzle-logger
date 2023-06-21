@@ -1,5 +1,5 @@
 {
-    "name": "placetopay-org/guzzle-logger",
+    "name": "placetopay/guzzle-logger",
     "type": "library",
     "license": "MIT",
     "autoload": {
