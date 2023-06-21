@@ -13,8 +13,7 @@ class HttpLog
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly HttpLogConfig $config,
-    )
-    {
+    ) {
     }
 
     public function log(RequestInterface $request, ResponseInterface $response = null): void
@@ -38,7 +37,7 @@ class HttpLog
             $context['request']['body'] = $this->formatBody($request);
         }
 
-        $this->logger->info($this->config->message . ' Request', $context);
+        $this->logger->info($this->config->message.' Request', $context);
     }
 
     private function logResponse(ResponseInterface $response): void
@@ -53,7 +52,7 @@ class HttpLog
             $context['response']['body'] = $this->formatBody($response);
         }
 
-        $this->logger->info($this->config->message. ' Response', $context);
+        $this->logger->info($this->config->message.' Response', $context);
     }
 
     private function formatBody(MessageInterface $response): array|string
