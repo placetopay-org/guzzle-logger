@@ -4,17 +4,18 @@ namespace PlacetopayOrg\GuzzleLogger\Middleware;
 
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
+use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
 class HttpLogMiddleware
 {
-    private readonly HttpLogger $strategy;
+    private readonly HttpLog $strategy;
 
-    public function __construct(LoggerInterface $log)
+    public function __construct(LoggerInterface $log, ?HttpLogConfig $config)
     {
-        $this->strategy = new HttpLogger($log);
+        $this->strategy = new HttpLog($log, $config ?? new HttpLogConfig());
     }
 
     public function __invoke(callable $handler): callable

@@ -2,14 +2,18 @@
 
 namespace PlacetopayOrg\GuzzleLogger\Middleware;
 
+use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
-class HttpLogger
+class HttpLog
 {
-    public function __construct(private readonly LoggerInterface $logger)
+    public function __construct(
+        private readonly LoggerInterface $logger,
+        private readonly HttpLogConfig $config,
+    )
     {
     }
 
@@ -34,7 +38,7 @@ class HttpLogger
             $context['request']['body'] = $this->formatBody($request);
         }
 
-        $this->logger->info('[REST-GATEWAYS] Guzzle HTTP Request', $context);
+        $this->logger->info($this->config->message . ' Request', $context);
     }
 
     private function logResponse(ResponseInterface $response): void
@@ -49,12 +53,12 @@ class HttpLogger
             $context['response']['body'] = $this->formatBody($response);
         }
 
-        $this->logger->info('[REST-GATEWAYS] Guzzle HTTP Request', $context);
+        $this->logger->info($this->config->message. ' Response', $context);
     }
 
-    private function formatBody(MessageInterface $request): string
+    private function formatBody(MessageInterface $response): array|string
     {
-        $body = $request->getBody()->__toString();
+        $body = $response->getBody()->__toString();
 
         $json = json_decode($body, true);
 
