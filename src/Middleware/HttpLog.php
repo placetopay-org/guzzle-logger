@@ -3,6 +3,7 @@
 namespace PlacetopayOrg\GuzzleLogger\Middleware;
 
 use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
+use PlacetopayOrg\GuzzleLogger\Helpers\ArrHelper;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -27,32 +28,56 @@ class HttpLog
 
     private function logRequest(RequestInterface $request): void
     {
-        $context = [];
-        $context['request']['method'] = $request->getMethod();
-        $context['request']['headers'] = $request->getHeaders();
-        $context['request']['url'] = $request->getUri()->__toString();
-        $context['request']['version'] = 'HTTP/'.$request->getProtocolVersion();
+        $this->logger->info($this->config->message.' Request', $this->getRequestContext($request));
+    }
+
+    private function logResponse(ResponseInterface $response): void
+    {
+        $this->logger->info($this->config->message.' Response', $this->getResponseContext($response));
+    }
+
+    private function getRequestContext(RequestInterface $request): array
+    {
+        $context = [
+            'request' => [
+                'method' => $request->getMethod(),
+                'headers' => $request->getHeaders(),
+                'url' => $request->getUri()->__toString(),
+                'version' => 'HTTP/'.$request->getProtocolVersion(),
+            ],
+        ];
 
         if ($request->getBody()->getSize() > 0) {
             $context['request']['body'] = $this->formatBody($request);
         }
 
-        $this->logger->info($this->config->message.' Request', $context);
+        if ($fields = $this->config->fieldsToSanitize) {
+            $this->sanitizer($context, $fields);
+        }
+
+        return $context;
     }
 
-    private function logResponse(ResponseInterface $response): void
+    private function getResponseContext(ResponseInterface $response): array
     {
-        $context = [];
-        $context['response']['headers'] = $response->getHeaders();
-        $context['response']['status_code'] = $response->getStatusCode();
-        $context['response']['version'] = 'HTTP/'.$response->getProtocolVersion();
-        $context['response']['message'] = $response->getReasonPhrase();
+        $context = [
+            'response' => [
+                'headers' => $response->getHeaders(),
+                'status_code' => $response->getStatusCode(),
+                'version' => 'HTTP/'.$response->getProtocolVersion(),
+                'message' => $response->getReasonPhrase(),
+            ],
+        ];
 
         if ($response->getBody()->getSize() > 0) {
             $context['response']['body'] = $this->formatBody($response);
         }
 
-        $this->logger->info($this->config->message.' Response', $context);
+        if ($fields = $this->config->fieldsToSanitize) {
+            $this->sanitizer($context, $fields);
+        }
+
+        return $context;
     }
 
     private function formatBody(MessageInterface $response): array|string
@@ -66,5 +91,25 @@ class HttpLog
         }
 
         return 'Could not json decode body';
+    }
+
+    private function sanitizer(array &$data, array $fields): void
+    {
+        foreach ($fields as $key => $format) {
+            if (is_numeric($key)) {
+                $key = $format;
+                $format = '***';
+            }
+
+            if (is_callable($format)) {
+                if ($value = ArrHelper::get($data, $key)) {
+                    $format = $format($value);
+                } else {
+                    continue;
+                }
+            }
+
+            ArrHelper::set($data, $key, $format);
+        }
     }
 }

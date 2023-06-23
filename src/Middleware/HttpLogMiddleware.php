@@ -2,6 +2,7 @@
 
 namespace PlacetopayOrg\GuzzleLogger\Middleware;
 
+use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
@@ -9,11 +10,11 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 
-class HttpLogMiddleware
+final class HttpLogMiddleware
 {
     private readonly HttpLog $strategy;
 
-    public function __construct(LoggerInterface $log, ?HttpLogConfig $config)
+    public function __construct(LoggerInterface $log, ?HttpLogConfig $config = null)
     {
         $this->strategy = new HttpLog($log, $config ?? new HttpLogConfig());
     }
@@ -35,6 +36,16 @@ class HttpLogMiddleware
 
     private function onRejected(RequestInterface $request, array $options): callable
     {
-        return fn ($reason) => Create::rejectionFor($reason);
+        return function (\Exception $reason) use ($request, $options) {
+            if ($reason instanceof RequestException && $reason->hasResponse() === true) {
+                $this->strategy->log($request, $reason->getResponse());
+
+                return Create::rejectionFor($reason);
+            }
+
+            $this->strategy->log($request);
+
+            return Create::rejectionFor($reason);
+        };
     }
 }
