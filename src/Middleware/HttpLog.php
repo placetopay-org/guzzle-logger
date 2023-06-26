@@ -28,12 +28,12 @@ class HttpLog
 
     private function logRequest(RequestInterface $request): void
     {
-        $this->logger->info($this->config->message.' Request', $this->getRequestContext($request));
+        $this->logger->info('Guzzle HTTP Request', $this->getRequestContext($request));
     }
 
     private function logResponse(ResponseInterface $response): void
     {
-        $this->logger->info($this->config->message.' Response', $this->getResponseContext($response));
+        $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($response));
     }
 
     private function getRequestContext(RequestInterface $request): array

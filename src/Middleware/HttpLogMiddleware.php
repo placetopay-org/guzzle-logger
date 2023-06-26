@@ -21,8 +21,11 @@ final class HttpLogMiddleware
 
     public function __invoke(callable $handler): callable
     {
-        return fn (RequestInterface $request, array $options = []): PromiseInterface => $handler($request, $options)
-            ->then($this->onFulfilled($request, $options), $this->onRejected($request, $options));
+        return fn(RequestInterface $request, array $options = []): PromiseInterface => $handler($request, $options)
+            ->then(
+                $this->onFulfilled($request, $options),
+                $this->onRejected($request, $options)
+            );
     }
 
     private function onFulfilled(RequestInterface $request, array $options): callable

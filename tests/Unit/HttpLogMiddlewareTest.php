@@ -9,8 +9,12 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
+use PlacetopayOrg\GuzzleLogger\LoggerWithSanitizer;
 use PlacetopayOrg\GuzzleLogger\Middleware\HttpLogMiddleware;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
+use RectorPrefix202306\Tracy\Logger;
 
 class HttpLogMiddlewareTest extends TestCase
 {
@@ -27,14 +31,24 @@ class HttpLogMiddlewareTest extends TestCase
 
     public function test_log_successful_transaction(): void
     {
+        $logger = new class($this->logger) extends AbstractLogger
+        {
+            public function __construct(private LoggerInterface $logger){}
+
+            public function log($level, \Stringable|string $message, array $context = []): void
+            {
+                $this->logger->log($level, '[company/library] '. $message,$context);
+            }
+        };
+
         $this->appendResponse(body: json_encode(['test' => 'test_log']))
-            ->getClient(httpConfig: new HttpLogConfig('HTTP TEST'))
+            ->getClient(logger: $logger)
             ->get('/');
 
         $this->assertCount(2, $this->logger->records);
         $this->assertSame('info', $this->logger->records[0]['level']);
-        $this->assertSame('HTTP TEST Request', $this->logger->records[0]['message']);
-        $this->assertSame('HTTP TEST Response', $this->logger->records[1]['message']);
+        $this->assertSame('[company/library] Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('[company/library] Guzzle HTTP Response', $this->logger->records[1]['message']);
         $this->assertArrayHasKey('test', $this->logger->records[1]['context']['response']['body']);
         $this->assertSame('test_log', $this->logger->records[1]['context']['response']['body']['test']);
     }
@@ -75,7 +89,7 @@ class HttpLogMiddlewareTest extends TestCase
         ];
 
         $this->appendResponse(body: json_encode($responseBody))
-            ->getClient(httpConfig: new HttpLogConfig(fieldsToSanitize: $fieldsToSanitize))
+            ->getClient(fieldsToSanitize: $fieldsToSanitize)
             ->send(new Request('POST', '/', [], json_encode($requestBody)));
 
         $this->assertCount(2, $this->logger->records);
@@ -127,10 +141,13 @@ class HttpLogMiddlewareTest extends TestCase
         return $this;
     }
 
-    private function getClient(array $options = [], ?HttpLogConfig $httpConfig = null): Client
+    private function getClient(array $options = [], array $fieldsToSanitize = [], ?LoggerInterface $logger = null): Client
     {
         $stack = HandlerStack::create($this->mockHandler);
-        $stack->unshift(new HttpLogMiddleware($this->logger, $httpConfig));
+        if (!$logger) {
+            $logger = new LoggerWithSanitizer($this->logger, $fieldsToSanitize);
+        }
+        $stack->unshift(new HttpLogMiddleware($logger));
         $handler = array_merge(['handler' => $stack], $options);
 
         return new Client($handler);
