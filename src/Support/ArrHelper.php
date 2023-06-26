@@ -1,6 +1,6 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger\Support;
+namespace PlacetoPay\GuzzleLogger\Support;
 
 use ArrayAccess;
 use Closure;

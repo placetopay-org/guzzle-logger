@@ -1,6 +1,6 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger;
+namespace PlacetoPay\GuzzleLogger;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;

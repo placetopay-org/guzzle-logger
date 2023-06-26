@@ -1,10 +1,11 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger;
+namespace PlacetoPay\GuzzleLogger;
 
 enum ValueSanitizer: string
 {
     case DEFAULT = 'DEFAULT';
+
     case CARD_NUMBER = 'CARD_NUMBER';
 
     public static function cardNumber(string $value): string
@@ -12,14 +13,14 @@ enum ValueSanitizer: string
         return preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1*****$3', $value);
     }
 
-    public static function default()
+    public static function default(): string
     {
         return '****';
     }
 
-    public static function sanitize($format, $value)
+    public static function sanitize($format, $value): mixed
     {
-        if (is_callable($format)){
+        if (is_callable($format)) {
             return $format($value);
         }
 

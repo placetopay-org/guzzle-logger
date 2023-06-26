@@ -1,8 +1,8 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger;
+namespace PlacetoPay\GuzzleLogger;
 
-use PlacetopayOrg\GuzzleLogger\Support\ArrHelper;
+use PlacetoPay\GuzzleLogger\Support\ArrHelper;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 
@@ -30,7 +30,7 @@ class LoggerWithSanitizer extends AbstractLogger
                 $format = ValueSanitizer::DEFAULT;
             }
 
-            if(!$value = ArrHelper::get($data, $key)) {
+            if (! $value = ArrHelper::get($data, $key)) {
                 continue;
             }
 

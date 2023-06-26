@@ -4,7 +4,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "PlacetopayOrg\\GuzzleLogger\\": "src/"
+            "PlacetoPay\\GuzzleLogger\\": "src/"
         }
     },
     "autoload-dev": {

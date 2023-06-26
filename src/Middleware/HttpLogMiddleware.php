@@ -1,11 +1,11 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger\Middleware;
+namespace PlacetoPay\GuzzleLogger\Middleware;
 
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
-use PlacetopayOrg\GuzzleLogger\HttpLog;
+use PlacetoPay\GuzzleLogger\HttpLog;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;

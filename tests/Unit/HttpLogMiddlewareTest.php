@@ -9,9 +9,9 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
-use PlacetopayOrg\GuzzleLogger\LoggerWithSanitizer;
-use PlacetopayOrg\GuzzleLogger\Middleware\HttpLogMiddleware;
-use PlacetopayOrg\GuzzleLogger\ValueSanitizer;
+use PlacetoPay\GuzzleLogger\LoggerWithSanitizer;
+use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
+use PlacetoPay\GuzzleLogger\ValueSanitizer;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
@@ -35,7 +35,7 @@ class HttpLogMiddlewareTest extends TestCase
             ->getClient()
             ->get('/', [
                 'json' => ['req_param' => 'req_param_value'],
-                'headers' => ['Accept-Language' => 'es_CO']
+                'headers' => ['Accept-Language' => 'es_CO'],
             ]);
 
         $this->assertCount(2, $this->logger->records);
@@ -99,7 +99,7 @@ class HttpLogMiddlewareTest extends TestCase
 
             public function log($level, \Stringable|string $message, array $context = []): void
             {
-                $this->logger->log($level, '[company/library] ' . $message, $context);
+                $this->logger->log($level, '[company/library] '.$message, $context);
             }
         };
 
@@ -111,7 +111,6 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('[company/library] Guzzle HTTP Response', $this->logger->records[1]['message']);
     }
 
-
     public function test_log_successful_transaction_sanitizing_data(): void
     {
         $requestBody = [
@@ -120,8 +119,8 @@ class HttpLogMiddlewareTest extends TestCase
             'instrument' => [
                 'card' => [
                     'number' => '4111111111111111',
-                    'cvv' => '123'
-                ]
+                    'cvv' => '123',
+                ],
             ],
         ];
 
@@ -137,7 +136,7 @@ class HttpLogMiddlewareTest extends TestCase
             'request.body.instrument.card.number' => ValueSanitizer::CARD_NUMBER,
             'request.body.instrument.card.cvv' => ValueSanitizer::DEFAULT,
             /** response */
-            'response.body.instrument.card.number' => fn($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1#####$3', (string)$value),
+            'response.body.instrument.card.number' => fn ($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1#####$3', (string) $value),
             'response.body.not_existing' => ValueSanitizer::DEFAULT,
         ];
 
@@ -163,8 +162,7 @@ class HttpLogMiddlewareTest extends TestCase
         string $body = '',
         string $version = '1.1',
         string $reason = null,
-    ): self
-    {
+    ): self {
         $this->mockHandler->append(new Response($code, $headers, $body, $version, $reason));
 
         return $this;
@@ -174,7 +172,7 @@ class HttpLogMiddlewareTest extends TestCase
     {
         $stack = HandlerStack::create($this->mockHandler);
 
-        if (!$logger) {
+        if (! $logger) {
             $logger = new LoggerWithSanitizer($this->logger);
         }
 
