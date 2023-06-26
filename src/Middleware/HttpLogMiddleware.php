@@ -14,9 +14,9 @@ final class HttpLogMiddleware
 {
     private readonly HttpLog $strategy;
 
-    public function __construct(LoggerInterface $log, ?HttpLogConfig $config = null)
+    public function __construct(LoggerInterface $log)
     {
-        $this->strategy = new HttpLog($log, $config ?? new HttpLogConfig());
+        $this->strategy = new HttpLog($log);
     }
 
     public function __invoke(callable $handler): callable

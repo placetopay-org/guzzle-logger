@@ -8,13 +8,11 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
-use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
 use PlacetopayOrg\GuzzleLogger\LoggerWithSanitizer;
 use PlacetopayOrg\GuzzleLogger\Middleware\HttpLogMiddleware;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
-use RectorPrefix202306\Tracy\Logger;
 
 class HttpLogMiddlewareTest extends TestCase
 {

@@ -2,8 +2,6 @@
 
 namespace PlacetopayOrg\GuzzleLogger\Middleware;
 
-use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
-use PlacetopayOrg\GuzzleLogger\Helpers\ArrHelper;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -13,7 +11,6 @@ class HttpLog
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly HttpLogConfig $config,
     ) {
     }
 
@@ -51,10 +48,6 @@ class HttpLog
             $context['request']['body'] = $this->formatBody($request);
         }
 
-        if ($fields = $this->config->fieldsToSanitize) {
-            $this->sanitizer($context, $fields);
-        }
-
         return $context;
     }
 
@@ -73,10 +66,6 @@ class HttpLog
             $context['response']['body'] = $this->formatBody($response);
         }
 
-        if ($fields = $this->config->fieldsToSanitize) {
-            $this->sanitizer($context, $fields);
-        }
-
         return $context;
     }
 
@@ -91,25 +80,5 @@ class HttpLog
         }
 
         return 'Could not json decode body';
-    }
-
-    private function sanitizer(array &$data, array $fields): void
-    {
-        foreach ($fields as $key => $format) {
-            if (is_numeric($key)) {
-                $key = $format;
-                $format = '***';
-            }
-
-            if (is_callable($format)) {
-                if ($value = ArrHelper::get($data, $key)) {
-                    $format = $format($value);
-                } else {
-                    continue;
-                }
-            }
-
-            ArrHelper::set($data, $key, $format);
-        }
     }
 }

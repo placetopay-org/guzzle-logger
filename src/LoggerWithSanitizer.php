@@ -16,7 +16,7 @@ class LoggerWithSanitizer extends AbstractLogger
     public function log($level, \Stringable|string $message, array $context = []): void
     {
         if (!empty($this->fieldsToSanitize)) {
-            $context = $this->sanitizer($context, $this->fieldsToSanitize);
+            $this->sanitizer($context, $this->fieldsToSanitize);
         }
 
         $this->logger->log($level, $message, $context);
