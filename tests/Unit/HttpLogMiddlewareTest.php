@@ -11,6 +11,7 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use PlacetopayOrg\GuzzleLogger\LoggerWithSanitizer;
 use PlacetopayOrg\GuzzleLogger\Middleware\HttpLogMiddleware;
+use PlacetopayOrg\GuzzleLogger\ValueSanitizer;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\Test\TestLogger;
@@ -28,108 +29,50 @@ class HttpLogMiddlewareTest extends TestCase
         $this->logger = new TestLogger();
     }
 
-    public function test_log_successful_transaction(): void
-    {
-        $logger = new class($this->logger) extends AbstractLogger {
-            public function __construct(private readonly LoggerInterface $logger)
-            {
-            }
-
-            public function log($level, \Stringable|string $message, array $context = []): void
-            {
-                $this->logger->log($level, '[company/library] '.$message, $context);
-            }
-        };
-
-        $this->appendResponse(body: json_encode(['test' => 'test_log']))
-            ->getClient(logger: $logger)
-            ->get('/');
-
-        $this->assertCount(2, $this->logger->records);
-        $this->assertSame('info', $this->logger->records[0]['level']);
-        $this->assertSame('[company/library] Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertSame('[company/library] Guzzle HTTP Response', $this->logger->records[1]['message']);
-        $this->assertArrayHasKey('test', $this->logger->records[1]['context']['response']['body']);
-        $this->assertSame('test_log', $this->logger->records[1]['context']['response']['body']['test']);
-    }
-
     public function test_log_successful_transaction_with_default_message(): void
     {
-        $this->appendResponse(body: json_encode(['test' => 'test_log']))->getClient()->get('/');
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode(['res_param' => 'res_param_value']))
+            ->getClient()
+            ->get('/', [
+                'json' => ['req_param' => 'req_param_value'],
+                'headers' => ['Accept-Language' => 'es_CO']
+            ]);
+
         $this->assertCount(2, $this->logger->records);
+
+        // Assert Request
         $this->assertSame('info', $this->logger->records[0]['level']);
         $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('GET', $this->logger->records[0]['context']['request']['method']);
+        $this->assertSame('https://example.com/', $this->logger->records[0]['context']['request']['url']);
+        $this->assertSame('HTTP/1.1', $this->logger->records[0]['context']['request']['version']);
+        $this->assertSame(['es_CO'], $this->logger->records[0]['context']['request']['headers']['Accept-Language']);
+        $this->assertSame(['req_param' => 'req_param_value'], $this->logger->records[0]['context']['request']['body']);
+
+        // Assert Response
         $this->assertSame('info', $this->logger->records[1]['level']);
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
-        $this->assertArrayHasKey('test', $this->logger->records[1]['context']['response']['body']);
-        $this->assertSame('test_log', $this->logger->records[1]['context']['response']['body']['test']);
+        $this->assertSame(['Content-Type' => ['application/json']], $this->logger->records[1]['context']['response']['headers']);
+        $this->assertSame(200, $this->logger->records[1]['context']['response']['status_code']);
+        $this->assertSame('HTTP/1.1', $this->logger->records[1]['context']['response']['version']);
+        $this->assertSame('OK', $this->logger->records[1]['context']['response']['message']);
+        $this->assertSame(['res_param' => 'res_param_value'], $this->logger->records[1]['context']['response']['body']);
     }
 
-    public function test_log_successful_transaction_masking_data(): void
-    {
-        $requestBody = [
-            'number' => 'value',
-            'key1' => ['number' => 'value'],
-            'key2' => ['key3' => ['number' => '4111111111111111']],
-        ];
-
-        $responseBody = [
-            'number' => 'value',
-            'key1' => ['number' => 'value2'],
-            'key2' => ['key3' => ['number' => '4111111111111111']],
-        ];
-
-        $fieldsToSanitize = [
-            /** request */
-            'request.body.number',
-            'request.body.key1.number' => '123',
-            'request.body.key2.key3.number' => fn ($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1*****$3', (string) $value),
-            /** response */
-            'response.body.key2.key3.number' => fn ($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1*****$3', (string) $value),
-        ];
-
-        $this->appendResponse(body: json_encode($responseBody))
-            ->getClient(fieldsToSanitize: $fieldsToSanitize)
-            ->send(new Request('POST', '/', [], json_encode($requestBody)));
-
-        $this->assertCount(2, $this->logger->records);
-
-        $requestData = $this->logger->records[0]['context']['request']['body'];
-        $this->assertSame('***', $requestData['number']);
-        $this->assertSame('123', $requestData['key1']['number']);
-        $this->assertSame('411111*****1111', $requestData['key2']['key3']['number']);
-
-        $responseData = $this->logger->records[1]['context']['response']['body'];
-
-        $this->assertSame('value', $responseData['number']);
-        $this->assertSame('value2', $responseData['key1']['number']);
-        $this->assertSame('411111*****1111', $responseData['key2']['key3']['number']);
-    }
-
-    public function test_log_unsuccessful_Transaction()
+    public function test_log_not_successful_transaction()
     {
         try {
-            $this->appendResponse()
-                ->appendResponse(500);
-
-            $client = $this->getClient();
-            $client->get('/');
-            $client->get('/');
+            $this->appendResponse(500)->getClient()->get('/');
         } catch (\Exception) {
         }
 
         $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
-
         $this->assertEquals('Guzzle HTTP Response', $this->logger->records[1]['message']);
-        $this->assertEquals(200, $this->logger->records[1]['context']['response']['status_code']);
-
-        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[2]['message']);
-
-        $this->assertEquals('Guzzle HTTP Response', $this->logger->records[3]['message']);
-        $this->assertEquals(500, $this->logger->records[3]['context']['response']['status_code']);
+        $this->assertSame(500, $this->logger->records[1]['context']['response']['status_code']);
+        $this->assertSame('Internal Server Error', $this->logger->records[1]['context']['response']['message']);
     }
 
-    public function test_log_when_TransferException_occurs()
+    public function test_log_when_transfer_exception_occurs()
     {
         try {
             $this->mockHandler->append(new TransferException('internal server Error', 500));
@@ -139,10 +82,79 @@ class HttpLogMiddlewareTest extends TestCase
         }
 
         $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
-
         $this->assertEquals('Guzzle HTTP Exception', $this->logger->records[1]['message']);
-        $this->assertEquals(500, $this->logger->records[1]['context']['reason']['code']);
-        $this->assertEquals('internal server Error', $this->logger->records[1]['context']['reason']['message']);
+
+        $exception = $this->logger->records[1]['context']['exception'];
+        $this->assertInstanceOf(TransferException::class, $exception);
+        $this->assertSame('internal server Error', $exception->getMessage());
+        $this->assertSame(500, $exception->getCode());
+    }
+
+    public function test_message_logger_can_be_decorated(): void
+    {
+        $logger = new class($this->logger) extends AbstractLogger {
+            public function __construct(private readonly LoggerInterface $logger)
+            {
+            }
+
+            public function log($level, \Stringable|string $message, array $context = []): void
+            {
+                $this->logger->log($level, '[company/library] ' . $message, $context);
+            }
+        };
+
+        $this->appendResponse(body: json_encode(['test' => 'test_log']))
+            ->getClient(logger: $logger)
+            ->get('/');
+
+        $this->assertSame('[company/library] Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('[company/library] Guzzle HTTP Response', $this->logger->records[1]['message']);
+    }
+
+
+    public function test_log_successful_transaction_sanitizing_data(): void
+    {
+        $requestBody = [
+            'email' => 'Jhon@example.com',
+            'user' => ['document' => '1234567890'],
+            'instrument' => [
+                'card' => [
+                    'number' => '4111111111111111',
+                    'cvv' => '123'
+                ]
+            ],
+        ];
+
+        $responseBody = [
+            'user' => ['username' => 'jhondoe123', 'name' => 'Jhon Doe'],
+            'instrument' => ['card' => ['number' => '4111111111111111']],
+        ];
+
+        $fieldsToSanitize = [
+            /** request */
+            'request.body.email',
+            'request.body.user.document' => '[FILTERED]',
+            'request.body.instrument.card.number' => ValueSanitizer::CARD_NUMBER,
+            'request.body.instrument.card.cvv' => ValueSanitizer::DEFAULT,
+            /** response */
+            'response.body.instrument.card.number' => fn($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1#####$3', (string)$value),
+            'response.body.not_existing' => ValueSanitizer::DEFAULT,
+        ];
+
+        $this->appendResponse(body: json_encode($responseBody))
+            ->getClient(logger: new LoggerWithSanitizer($this->logger, $fieldsToSanitize))
+            ->send(new Request('POST', '/', [], json_encode($requestBody)));
+
+        $requestData = $this->logger->records[0]['context']['request']['body'];
+        $this->assertSame('****', $requestData['email']);
+        $this->assertSame('[FILTERED]', $requestData['user']['document']);
+        $this->assertSame('411111*****1111', $requestData['instrument']['card']['number']);
+        $this->assertSame('****', $requestData['instrument']['card']['cvv']);
+
+        $responseData = $this->logger->records[1]['context']['response']['body'];
+        $this->assertSame('jhondoe123', $responseData['user']['username']);
+        $this->assertSame('Jhon Doe', $responseData['user']['name']);
+        $this->assertSame('411111#####1111', $responseData['instrument']['card']['number']);
     }
 
     private function appendResponse(
@@ -151,21 +163,26 @@ class HttpLogMiddlewareTest extends TestCase
         string $body = '',
         string $version = '1.1',
         string $reason = null,
-    ): self {
+    ): self
+    {
         $this->mockHandler->append(new Response($code, $headers, $body, $version, $reason));
 
         return $this;
     }
 
-    private function getClient(array $options = [], array $fieldsToSanitize = [], ?LoggerInterface $logger = null): Client
+    private function getClient(?LoggerInterface $logger = null): Client
     {
         $stack = HandlerStack::create($this->mockHandler);
-        if (! $logger) {
-            $logger = new LoggerWithSanitizer($this->logger, $fieldsToSanitize);
-        }
-        $stack->unshift(new HttpLogMiddleware($logger));
-        $handler = array_merge(['handler' => $stack], $options);
 
-        return new Client($handler);
+        if (!$logger) {
+            $logger = new LoggerWithSanitizer($this->logger);
+        }
+
+        $stack->unshift(new HttpLogMiddleware($logger));
+
+        return new Client([
+            'handler' => $stack,
+            'base_uri' => 'https://example.com',
+        ]);
     }
 }

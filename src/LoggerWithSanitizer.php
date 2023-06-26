@@ -27,18 +27,14 @@ class LoggerWithSanitizer extends AbstractLogger
         foreach ($fields as $key => $format) {
             if (is_numeric($key)) {
                 $key = $format;
-                $format = '***';
+                $format = ValueSanitizer::DEFAULT;
             }
 
-            if (is_callable($format)) {
-                if ($value = ArrHelper::get($data, $key)) {
-                    $format = $format($value);
-                } else {
-                    continue;
-                }
+            if(!$value = ArrHelper::get($data, $key)) {
+                continue;
             }
 
-            ArrHelper::set($data, $key, $format);
+            ArrHelper::set($data, $key, ValueSanitizer::sanitize($format, $value));
         }
     }
 }

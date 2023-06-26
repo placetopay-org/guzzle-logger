@@ -25,7 +25,7 @@ class HttpLog
         if ($response !== null) {
             $this->logResponse($response);
         } else {
-            $this->logReason($exception);
+            $this->logException($exception);
         }
     }
 
@@ -39,19 +39,13 @@ class HttpLog
         $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($response));
     }
 
-    private function logReason(?Throwable $exception): void
+    private function logException(?Throwable $exception): void
     {
-        $context = [];
         if ($exception === null) {
             return;
         }
 
-        $context['reason']['code'] = $exception->getCode();
-        $context['reason']['message'] = $exception->getMessage();
-        $context['reason']['line'] = $exception->getLine();
-        $context['reason']['file'] = $exception->getFile();
-
-        $this->logger->error('Guzzle HTTP Exception', $context);
+        $this->logger->error('Guzzle HTTP Exception', ['exception' => $exception]);
     }
 
     private function getRequestContext(RequestInterface $request): array
