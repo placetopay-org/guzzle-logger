@@ -10,19 +10,19 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use PlacetopayOrg\GuzzleLogger\DTO\HttpLogConfig;
 use PlacetopayOrg\GuzzleLogger\Middleware\HttpLogMiddleware;
-use Tests\Support\HistoryLogger;
+use Psr\Log\Test\TestLogger;
 
 class HttpLogMiddlewareTest extends TestCase
 {
     private MockHandler $mockHandler;
 
-    private HistoryLogger $logger;
+    private TestLogger $logger;
 
     public function setUp(): void
     {
         parent::setUp();
         $this->mockHandler = new MockHandler();
-        $this->logger = new HistoryLogger();
+        $this->logger = new TestLogger();
     }
 
     public function test_log_successful_transaction(): void
@@ -31,24 +31,24 @@ class HttpLogMiddlewareTest extends TestCase
             ->getClient(httpConfig: new HttpLogConfig('HTTP TEST'))
             ->get('/');
 
-        $this->assertCount(2, $this->logger->history);
-        $this->assertSame('info', $this->logger->history[0]['level']);
-        $this->assertSame('HTTP TEST Request', $this->logger->history[0]['message']);
-        $this->assertSame('HTTP TEST Response', $this->logger->history[1]['message']);
-        $this->assertArrayHasKey('test', $this->logger->history[1]['context']['response']['body']);
-        $this->assertSame('test_log', $this->logger->history[1]['context']['response']['body']['test']);
+        $this->assertCount(2, $this->logger->records);
+        $this->assertSame('info', $this->logger->records[0]['level']);
+        $this->assertSame('HTTP TEST Request', $this->logger->records[0]['message']);
+        $this->assertSame('HTTP TEST Response', $this->logger->records[1]['message']);
+        $this->assertArrayHasKey('test', $this->logger->records[1]['context']['response']['body']);
+        $this->assertSame('test_log', $this->logger->records[1]['context']['response']['body']['test']);
     }
 
     public function test_log_successful_transaction_with_default_message(): void
     {
         $this->appendResponse(body: json_encode(['test' => 'test_log']))->getClient()->get('/');
-        $this->assertCount(2, $this->logger->history);
-        $this->assertSame('info', $this->logger->history[0]['level']);
-        $this->assertSame('Guzzle HTTP Request', $this->logger->history[0]['message']);
-        $this->assertSame('info', $this->logger->history[1]['level']);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->history[1]['message']);
-        $this->assertArrayHasKey('test', $this->logger->history[1]['context']['response']['body']);
-        $this->assertSame('test_log', $this->logger->history[1]['context']['response']['body']['test']);
+        $this->assertCount(2, $this->logger->records);
+        $this->assertSame('info', $this->logger->records[0]['level']);
+        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('info', $this->logger->records[1]['level']);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertArrayHasKey('test', $this->logger->records[1]['context']['response']['body']);
+        $this->assertSame('test_log', $this->logger->records[1]['context']['response']['body']['test']);
     }
 
     public function test_log_successful_transaction_masking_data(): void
@@ -78,14 +78,14 @@ class HttpLogMiddlewareTest extends TestCase
             ->getClient(httpConfig: new HttpLogConfig(fieldsToSanitize: $fieldsToSanitize))
             ->send(new Request('POST', '/', [], json_encode($requestBody)));
 
-        $this->assertCount(2, $this->logger->history);
+        $this->assertCount(2, $this->logger->records);
 
-        $requestData = $this->logger->history[0]['context']['request']['body'];
+        $requestData = $this->logger->records[0]['context']['request']['body'];
         $this->assertSame('***', $requestData['number']);
         $this->assertSame('123', $requestData['key1']['number']);
         $this->assertSame('411111*****1111', $requestData['key2']['key3']['number']);
 
-        $responseData = $this->logger->history[1]['context']['response']['body'];
+        $responseData = $this->logger->records[1]['context']['response']['body'];
 
         $this->assertSame('value', $responseData['number']);
         $this->assertSame('value2', $responseData['key1']['number']);
@@ -104,15 +104,15 @@ class HttpLogMiddlewareTest extends TestCase
         } catch (\Exception) {
         }
 
-        $this->assertEquals('Guzzle HTTP Request', $this->logger->history[0]['message']);
+        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
 
-        $this->assertEquals('Guzzle HTTP Response', $this->logger->history[1]['message']);
-        $this->assertEquals(200, $this->logger->history[1]['context']['response']['status_code']);
+        $this->assertEquals('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertEquals(200, $this->logger->records[1]['context']['response']['status_code']);
 
-        $this->assertEquals('Guzzle HTTP Request', $this->logger->history[2]['message']);
+        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[2]['message']);
 
-        $this->assertEquals('Guzzle HTTP Response', $this->logger->history[3]['message']);
-        $this->assertEquals(500, $this->logger->history[3]['context']['response']['status_code']);
+        $this->assertEquals('Guzzle HTTP Response', $this->logger->records[3]['message']);
+        $this->assertEquals(500, $this->logger->records[3]['context']['response']['status_code']);
     }
 
     private function appendResponse(
