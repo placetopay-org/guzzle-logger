@@ -2,7 +2,7 @@
 
 namespace PlacetopayOrg\GuzzleLogger;
 
-use PlacetopayOrg\GuzzleLogger\Helpers\ArrHelper;
+use PlacetopayOrg\GuzzleLogger\Support\ArrHelper;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 
@@ -15,7 +15,7 @@ class LoggerWithSanitizer extends AbstractLogger
 
     public function log($level, \Stringable|string $message, array $context = []): void
     {
-        if (!empty($this->fieldsToSanitize)) {
+        if (! empty($this->fieldsToSanitize)) {
             $this->sanitizer($context, $this->fieldsToSanitize);
         }
 

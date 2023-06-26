@@ -1,11 +1,12 @@
 <?php
 
-namespace PlacetopayOrg\GuzzleLogger\Middleware;
+namespace PlacetopayOrg\GuzzleLogger;
 
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 class HttpLog
 {
@@ -14,12 +15,17 @@ class HttpLog
     ) {
     }
 
-    public function log(RequestInterface $request, ResponseInterface $response = null): void
-    {
+    public function log(
+        RequestInterface $request,
+        ResponseInterface $response = null,
+        ?Throwable $exception = null
+    ): void {
         $this->logRequest($request);
 
         if ($response !== null) {
             $this->logResponse($response);
+        } else {
+            $this->logReason($exception);
         }
     }
 
@@ -31,6 +37,21 @@ class HttpLog
     private function logResponse(ResponseInterface $response): void
     {
         $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($response));
+    }
+
+    private function logReason(?Throwable $exception): void
+    {
+        $context = [];
+        if ($exception === null) {
+            return;
+        }
+
+        $context['reason']['code'] = $exception->getCode();
+        $context['reason']['message'] = $exception->getMessage();
+        $context['reason']['line'] = $exception->getLine();
+        $context['reason']['file'] = $exception->getFile();
+
+        $this->logger->error('Guzzle HTTP Exception', $context);
     }
 
     private function getRequestContext(RequestInterface $request): array

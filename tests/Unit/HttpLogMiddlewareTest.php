@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
@@ -29,13 +30,14 @@ class HttpLogMiddlewareTest extends TestCase
 
     public function test_log_successful_transaction(): void
     {
-        $logger = new class($this->logger) extends AbstractLogger
-        {
-            public function __construct(private LoggerInterface $logger){}
+        $logger = new class($this->logger) extends AbstractLogger {
+            public function __construct(private readonly LoggerInterface $logger)
+            {
+            }
 
             public function log($level, \Stringable|string $message, array $context = []): void
             {
-                $this->logger->log($level, '[company/library] '. $message,$context);
+                $this->logger->log($level, '[company/library] '.$message, $context);
             }
         };
 
@@ -127,6 +129,22 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertEquals(500, $this->logger->records[3]['context']['response']['status_code']);
     }
 
+    public function test_log_when_TransferException_occurs()
+    {
+        try {
+            $this->mockHandler->append(new TransferException('internal server Error', 500));
+
+            $this->getClient()->get('/');
+        } catch (\Exception) {
+        }
+
+        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
+
+        $this->assertEquals('Guzzle HTTP Exception', $this->logger->records[1]['message']);
+        $this->assertEquals(500, $this->logger->records[1]['context']['reason']['code']);
+        $this->assertEquals('internal server Error', $this->logger->records[1]['context']['reason']['message']);
+    }
+
     private function appendResponse(
         int $code = 200,
         array $headers = [],
@@ -142,7 +160,7 @@ class HttpLogMiddlewareTest extends TestCase
     private function getClient(array $options = [], array $fieldsToSanitize = [], ?LoggerInterface $logger = null): Client
     {
         $stack = HandlerStack::create($this->mockHandler);
-        if (!$logger) {
+        if (! $logger) {
             $logger = new LoggerWithSanitizer($this->logger, $fieldsToSanitize);
         }
         $stack->unshift(new HttpLogMiddleware($logger));
