@@ -37,24 +37,24 @@ final class HttpLogMiddleware
 
             return $handler($request, $options)
                 ->then(
-                    $this->onFulfilled($request, $options),
-                    $this->onRejected($request, $options)
+                    $this->onFulfilled($request),
+                    $this->onRejected($request)
                 );
         };
     }
 
-    private function onFulfilled(RequestInterface $request, array $options): callable
+    private function onFulfilled(RequestInterface $request): callable
     {
-        return function (ResponseInterface $response) use ($request, $options) {
+        return function (ResponseInterface $response) use ($request) {
             $this->strategy->log($request, $response, null, $this->stats);
 
             return $response;
         };
     }
 
-    private function onRejected(RequestInterface $request, array $options): callable
+    private function onRejected(RequestInterface $request): callable
     {
-        return function (\Exception $reason) use ($request, $options) {
+        return function (\Exception $reason) use ($request) {
             if ($reason instanceof RequestException && $reason->hasResponse() === true) {
                 $this->strategy->log($request, $reason->getResponse(), null, $this->stats);
 
