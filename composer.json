@@ -1,10 +1,15 @@
 {
-    "name": "placetopay-org/guzzle-logger",
+    "name": "placetopay/guzzle-logger",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "PlacetopayOrg\\GuzzleLogger\\": "src/"
+            "PlacetoPay\\GuzzleLogger\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "archive": {
@@ -18,7 +23,9 @@
     ],
     "require": {
         "php": "^8.1",
-        "ext-json": "*"
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.7",
+        "psr/log": "^3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.5",
@@ -26,7 +33,8 @@
         "symfony/var-dumper": "^4.2",
         "friendsofphp/php-cs-fixer": "^3.6",
         "eduarguz/shift-php-cs": "^3.0",
-        "rector/rector": "^0.17.0"
+        "rector/rector": "^0.17.0",
+        "fig/log-test": "^1.1"
     },
     "scripts": {
         "test": "vendor/bin/phpunit --no-coverage tests/",
