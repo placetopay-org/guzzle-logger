@@ -6,3 +6,4 @@ tests/coverage
 .php-cs-fixer.cache
 composer.lock
 .rector-cache
+.scannerwork

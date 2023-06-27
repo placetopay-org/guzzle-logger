@@ -1,4 +1,5 @@
 # Guzzle Log Middleware
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=placetopay_guzzle-logger&metric=alert_status&token=4d003bbaf22d7058302b192bf09752fa4706d434)](https://sonarcloud.io/summary/new_code?id=placetopay_guzzle-logger)
 
 This is a middleware for [guzzle](https://github.com/guzzle/guzzle) that will help you automatically log every request
 and response using a PSR-3 logger.
