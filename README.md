@@ -9,6 +9,9 @@ The middleware is functional with version 7 of Guzzle.
 
 ### Simple usage
 
+From now on each request and response you execute using `$client` object will be logged.
+By default, the middleware logs every activity with level `INFO`.
+
 ```php
 use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
 use GuzzleHttp\HandlerStack;
@@ -21,10 +24,13 @@ $client = new GuzzleHttp\Client([
 ]);
 ```
 
-From now on each request and response you execute using `$client` object will be logged.
-By default, the middleware logs every activity with level `INFO`.
-
 ### With Sanitizer
+
+With the LoggerWithSanitizer class you can obfuscate or sanitize sensitive data when logging.
+
+fieldsToSanitize is a key-value array, with which you can determine the level of data to sanitize and the value with which to obfuscate the value.
+If you do not send a value and the value is found it will be sanitized with a default value `ValueSanitizer::DEFAULT`.
+
 
 ```php
 use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
@@ -36,6 +42,7 @@ use GuzzleHttp\HandlerStack;
 use GuzzleLogger\ValueSanitizer;
 
 $fieldsToSanitize = [
+            'request.body.instrument.card.cvv',
             'request.body.instrument.card.number' => ValueSanitizer::CARD_NUMBER->value,
             'request.body.instrument.card.expiration' => ValueSanitizer::DEFAULT->value,
             'response.body.instrument.card.number' => fn ($value) => preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1····$3', (string) $value)
@@ -48,15 +55,15 @@ $client = new GuzzleHttp\Client([
     'handler' => $stack,
 ]);
 ```
-With the LoggerWithSanitizer class you can obfuscate or sanitize sensitive data when logging.
-
-fieldsToSanitize is a key-value array, with which you can determine the level of data to sanitize and the value with which to obfuscate the value. 
-If you do not send a value and the value is found it will be sanitized with a default value `ValueSanitizer::DEFAULT`.
-
 
 ### Using options on each request
 
 You can set on each request options about your log.
+
+| name         | Type value | description                                                            |
+|--------------|------------|------------------------------------------------------------------------|
+| `statistics` | boolean    | option is true the middleware will log statistics about the HTTP call. |
+
 
  ```php
  $client->get('/', [
@@ -66,7 +73,6 @@ You can set on each request options about your log.
  ]);
  ```
 
-- ``statistics`` option is true and this is also true the middleware will log statistics about the HTTP call.
 
 ## Change log
 
