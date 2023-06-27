@@ -29,6 +29,9 @@ jobs:
       - name: ✔Check-php-cs-fixer
         run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
 
+      - name: ✔Check-phpstan
+        run: vendor/bin/phpstan analyse
+
       - name: ✔Check-rector
         run: vendor/bin/rector process --dry-run
 
