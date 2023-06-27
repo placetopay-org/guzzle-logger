@@ -156,6 +156,21 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('411111#####1111', $responseData['instrument']['card']['number']);
     }
 
+    public function test_log_successful_transaction_with_transfer_stats()
+    {
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode(['res_param' => 'res_param_value']))
+            ->getClient(options: ['log' => ['statistics' => true]])
+            ->get('/', [
+                'json' => ['req_param' => 'req_param_value'],
+                'headers' => ['Accept-Language' => 'es_CO'],
+            ]);
+
+        $this->assertSame('debug', $this->logger->records[1]['level']);
+        $this->assertEquals('Guzzle HTTP statistics', $this->logger->records[1]['message']);
+        $this->assertNotNull($this->logger->records[1]['context']['time']);
+        $this->assertNotNull($this->logger->records[1]['context']['uri']);
+    }
+
     private function appendResponse(
         int $code = 200,
         array $headers = [],
@@ -168,7 +183,7 @@ class HttpLogMiddlewareTest extends TestCase
         return $this;
     }
 
-    private function getClient(?LoggerInterface $logger = null): Client
+    private function getClient(?LoggerInterface $logger = null, array $options = []): Client
     {
         $stack = HandlerStack::create($this->mockHandler);
 
@@ -178,9 +193,11 @@ class HttpLogMiddlewareTest extends TestCase
 
         $stack->unshift(new HttpLogMiddleware($logger));
 
-        return new Client([
+        $stack = array_merge([
             'handler' => $stack,
             'base_uri' => 'https://example.com',
-        ]);
+        ], $options);
+
+        return new Client($stack);
     }
 }

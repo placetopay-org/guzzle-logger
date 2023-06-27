@@ -5,6 +5,7 @@ namespace PlacetoPay\GuzzleLogger\Middleware;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
+use GuzzleHttp\TransferStats;
 use PlacetoPay\GuzzleLogger\HttpLog;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -14,6 +15,10 @@ final class HttpLogMiddleware
 {
     private readonly HttpLog $strategy;
 
+    private bool $logStatistics = false;
+
+    private ?TransferStats $stats = null;
+
     public function __construct(LoggerInterface $log)
     {
         $this->strategy = new HttpLog($log);
@@ -21,17 +26,27 @@ final class HttpLogMiddleware
 
     public function __invoke(callable $handler): callable
     {
-        return fn (RequestInterface $request, array $options = []): PromiseInterface => $handler($request, $options)
-            ->then(
-                $this->onFulfilled($request, $options),
-                $this->onRejected($request, $options)
-            );
+        return function (RequestInterface $request, array $options) use ($handler): PromiseInterface {
+            $this->setOptions($options);
+
+            if ($this->logStatistics && ! isset($options['on_stats'])) {
+                $options['on_stats'] = function (TransferStats $stats) {
+                    $this->stats = $stats;
+                };
+            }
+
+            return $handler($request, $options)
+                ->then(
+                    $this->onFulfilled($request, $options),
+                    $this->onRejected($request, $options)
+                );
+        };
     }
 
     private function onFulfilled(RequestInterface $request, array $options): callable
     {
         return function (ResponseInterface $response) use ($request, $options) {
-            $this->strategy->log($request, $response);
+            $this->strategy->log($request, $response, null, $this->stats);
 
             return $response;
         };
@@ -41,14 +56,30 @@ final class HttpLogMiddleware
     {
         return function (\Exception $reason) use ($request, $options) {
             if ($reason instanceof RequestException && $reason->hasResponse() === true) {
-                $this->strategy->log($request, $reason->getResponse());
+                $this->strategy->log($request, $reason->getResponse(), null, $this->stats);
 
                 return Create::rejectionFor($reason);
             }
 
-            $this->strategy->log($request, null, $reason);
+            $this->strategy->log($request, null, $reason, $this->stats);
 
             return Create::rejectionFor($reason);
         };
+    }
+
+    private function setOptions(array $options): void
+    {
+        if (! isset($options['log'])) {
+            return;
+        }
+
+        $options = $options['log'];
+
+        $options = array_merge([
+            'statistics' => $this->logStatistics,
+        ], $options);
+
+        $this->stats = null;
+        $this->logStatistics = $options['statistics'];
     }
 }

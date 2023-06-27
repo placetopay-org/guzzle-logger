@@ -2,6 +2,7 @@
 
 namespace PlacetoPay\GuzzleLogger;
 
+use GuzzleHttp\TransferStats;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -18,9 +19,14 @@ class HttpLog
     public function log(
         RequestInterface $request,
         ResponseInterface $response = null,
-        ?Throwable $exception = null
+        ?Throwable $exception = null,
+        ?TransferStats $stats = null,
     ): void {
         $this->logRequest($request);
+
+        if ($stats !== null) {
+            $this->logStats($stats);
+        }
 
         if ($response !== null) {
             $this->logResponse($response);
@@ -46,6 +52,14 @@ class HttpLog
         }
 
         $this->logger->error('Guzzle HTTP Exception', ['exception' => $exception]);
+    }
+
+    private function logStats(TransferStats $stats): void
+    {
+        $this->logger->debug('Guzzle HTTP statistics', [
+            'time' => $stats->getTransferTime(),
+            'uri' => $stats->getEffectiveUri(),
+        ]);
     }
 
     private function getRequestContext(RequestInterface $request): array
