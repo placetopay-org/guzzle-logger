@@ -1,6 +1,8 @@
 name: guzzle-logger-check
 
-on: ["push"]
+on:
+  - pull_request
+  - push
 
 permissions:
   contents: read
@@ -24,7 +26,10 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: 🛠️Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run:
+          - composer install --prefer-dist --no-progress
+          - composer validate --no-check-all --strict
+          - composer audit
 
       - name: ✔Check-php-cs-fixer
         run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
@@ -35,5 +40,17 @@ jobs:
       - name: ✔Check-rector
         run: vendor/bin/rector process --dry-run
 
+      - name: Setup PHP with Xdebug
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: xdebug
+
       - name: 🧪Run test suite
-        run: vendor/bin/phpunit --no-coverage tests/
+        run: vendor/bin/phpunit --coverage-clover=coverage.xml tests/
+
+      - name: ☁️SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
