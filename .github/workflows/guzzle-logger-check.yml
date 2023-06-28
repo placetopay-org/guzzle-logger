@@ -24,6 +24,7 @@ jobs:
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-php-
+          ref: main
 
       - name: 🛠️Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -48,9 +49,6 @@ jobs:
 
       - name: 🧪Run test suite
         run: vendor/bin/phpunit --coverage-clover=tests/coverage/coverage.xml tests/
-
-      - name: Fetch branches and tags
-        run: git fetch --prune --unshallow
 
       - name: ☁️SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
