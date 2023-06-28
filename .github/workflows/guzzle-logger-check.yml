@@ -49,9 +49,6 @@ jobs:
       - name: 🧪Run test suite
         run: vendor/bin/phpunit --coverage-clover=tests/coverage/coverage.xml tests/
 
-      - name: Fix code coverage paths
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
-
       - name: ☁️SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
