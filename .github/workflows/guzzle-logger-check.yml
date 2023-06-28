@@ -26,9 +26,10 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: 🛠️Install dependencies
-        run:
-           composer install --prefer-dist --no-progress
-           composer audit
+        run: composer install --prefer-dist --no-progress
+
+      - name: ✔Check-Composer-audit
+        run: composer audit
 
       - name: ✔Check-php-cs-fixer
         run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
