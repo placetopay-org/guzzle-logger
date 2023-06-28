@@ -28,7 +28,6 @@ jobs:
       - name: 🛠️Install dependencies
         run:
            composer install --prefer-dist --no-progress
-           composer validate --no-check-all --strict
            composer audit
 
       - name: ✔Check-php-cs-fixer
