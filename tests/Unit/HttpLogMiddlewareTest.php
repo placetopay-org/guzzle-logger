@@ -59,7 +59,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame(['res_param' => 'res_param_value'], $this->logger->records[1]['context']['response']['body']);
     }
 
-    public function test_log_successful_transaction_with_default_message_without_body_in_request_and_response(): void
+    public function test_log_successful_without_body_in_request_and_response(): void
     {
         $this->appendResponse(headers: ['Content-Type' => 'application/json'])
             ->getClient()
