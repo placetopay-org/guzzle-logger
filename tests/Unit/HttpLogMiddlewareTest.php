@@ -59,6 +59,27 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame(['res_param' => 'res_param_value'], $this->logger->records[1]['context']['response']['body']);
     }
 
+    public function test_log_successful_transaction_with_default_message_without_body_in_request_and_response(): void
+    {
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'])
+            ->getClient()
+            ->get('/', [
+                'headers' => ['Accept-Language' => 'es_CO'],
+            ]);
+
+        $this->assertCount(2, $this->logger->records);
+
+        // Assert Request
+        $this->assertSame('info', $this->logger->records[0]['level']);
+        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertFalse(isset($this->logger->records[0]['context']['request']['body']));
+
+        // Assert Response
+        $this->assertSame('info', $this->logger->records[1]['level']);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertFalse(isset($this->logger->records[0]['context']['response']['body']));
+    }
+
     public function test_log_not_successful_transaction()
     {
         try {

@@ -64,38 +64,28 @@ class HttpLog
 
     private function getRequestContext(RequestInterface $request): array
     {
-        $context = [
-            'request' => [
+        return [
+            'request' => array_filter([
+                'url' => $request->getUri()->__toString(),
+                'body' => $request->getBody()->getSize() > 0 ? $this->formatBody($request) : null,
                 'method' => $request->getMethod(),
                 'headers' => $request->getHeaders(),
-                'url' => $request->getUri()->__toString(),
                 'version' => 'HTTP/'.$request->getProtocolVersion(),
-            ],
+            ]),
         ];
-
-        if ($request->getBody()->getSize() > 0) {
-            $context['request']['body'] = $this->formatBody($request);
-        }
-
-        return $context;
     }
 
     private function getResponseContext(ResponseInterface $response): array
     {
-        $context = [
-            'response' => [
-                'headers' => $response->getHeaders(),
+        return [
+            'response' => array_filter([
                 'status_code' => $response->getStatusCode(),
+                'body' => $response->getBody()->getSize() > 0 ? $this->formatBody($response) : null,
+                'headers' => $response->getHeaders(),
                 'version' => 'HTTP/'.$response->getProtocolVersion(),
                 'message' => $response->getReasonPhrase(),
-            ],
+            ]),
         ];
-
-        if ($response->getBody()->getSize() > 0) {
-            $context['response']['body'] = $this->formatBody($response);
-        }
-
-        return $context;
     }
 
     private function formatBody(MessageInterface $response): array|string
