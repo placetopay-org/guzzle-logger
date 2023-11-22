@@ -25,8 +25,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@2.25.1
+        with:
+          php-version: 8.2
+
       - name: 🛠️Install dependencies
-        run: composer --no-interaction --optimize-autoloader --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: ✔Check-Composer-audit
         run: composer audit
