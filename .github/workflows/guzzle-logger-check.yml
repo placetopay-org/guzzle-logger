@@ -26,7 +26,7 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: 🛠️Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run: composer --no-interaction --optimize-autoloader --prefer-dist
 
       - name: ✔Check-Composer-audit
         run: composer audit
