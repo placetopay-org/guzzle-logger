@@ -53,6 +53,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('info', $this->logger->records[1]['level']);
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
         $this->assertSame(['Content-Type' => ['application/json']], $this->logger->records[1]['context']['response']['headers']);
+        $this->assertSame('https://example.com/', $this->logger->records[1]['context']['response']['url']);
         $this->assertSame(200, $this->logger->records[1]['context']['response']['status_code']);
         $this->assertSame('HTTP/1.1', $this->logger->records[1]['context']['response']['version']);
         $this->assertSame('OK', $this->logger->records[1]['context']['response']['message']);

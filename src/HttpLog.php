@@ -29,7 +29,7 @@ class HttpLog
         }
 
         if ($response !== null) {
-            $this->logResponse($response);
+            $this->logResponse($request, $response);
         } else {
             $this->logException($exception);
         }
@@ -40,9 +40,9 @@ class HttpLog
         $this->logger->info('Guzzle HTTP Request', $this->getRequestContext($request));
     }
 
-    private function logResponse(ResponseInterface $response): void
+    private function logResponse(RequestInterface $request, ResponseInterface $response): void
     {
-        $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($response));
+        $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($request, $response));
     }
 
     private function logException(?Throwable $exception): void
@@ -75,12 +75,13 @@ class HttpLog
         ];
     }
 
-    private function getResponseContext(ResponseInterface $response): array
+    private function getResponseContext(RequestInterface $request, ResponseInterface $response): array
     {
         return [
             'response' => array_filter([
-                'status_code' => $response->getStatusCode(),
+                'url' => $request->getUri()->__toString(),
                 'body' => $response->getBody()->getSize() > 0 ? $this->formatBody($response) : null,
+                'status_code' => $response->getStatusCode(),
                 'headers' => $response->getHeaders(),
                 'version' => 'HTTP/'.$response->getProtocolVersion(),
                 'message' => $response->getReasonPhrase(),
