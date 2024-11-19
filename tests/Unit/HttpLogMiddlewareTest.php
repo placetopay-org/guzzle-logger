@@ -22,6 +22,7 @@ class HttpLogMiddlewareTest extends TestCase
 
     private TestLogger $logger;
 
+    #[\Override]
     public function setUp(): void
     {
         parent::setUp();
