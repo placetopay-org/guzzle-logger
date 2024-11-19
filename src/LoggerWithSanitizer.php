@@ -13,6 +13,7 @@ class LoggerWithSanitizer extends AbstractLogger
         //
     }
 
+    #[\Override]
     public function log($level, \Stringable|string $message, array $context = []): void
     {
         if (! empty($this->fieldsToSanitize)) {
