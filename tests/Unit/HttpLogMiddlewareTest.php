@@ -170,7 +170,7 @@ class HttpLogMiddlewareTest extends TestCase
         $requestData = $this->logger->records[0]['context']['request']['body'];
         $this->assertSame('****', $requestData['email']);
         $this->assertSame('[FILTERED]', $requestData['user']['document']);
-        $this->assertSame('411111*****1111', $requestData['instrument']['card']['number']);
+        $this->assertSame('411111******1111', $requestData['instrument']['card']['number']);
         $this->assertSame('****', $requestData['instrument']['card']['cvv']);
 
         $responseData = $this->logger->records[1]['context']['response']['body'];
