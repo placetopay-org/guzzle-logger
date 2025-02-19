@@ -12,10 +12,6 @@ enum ValueSanitizer: string
     {
         $length = strlen($value);
 
-        if ($length == 0){
-            return '';
-        }
-
         if ($length <= 5) {
             return substr($value, 0, 1) . str_repeat('*', $length - 1);
         }
