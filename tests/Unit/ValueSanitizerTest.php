@@ -11,6 +11,6 @@ class ValueSanitizerTest extends TestCase
     {
         $this->assertEquals('1***', ValueSanitizer::cardNumber('1234'));
         $this->assertEquals('1******8', ValueSanitizer::cardNumber('12345678'));
-        $this->assertEquals('123456******3456', ValueSanitizer::cardNumber('1234567890123456'));
+        $this->assertEquals('411111******1111', ValueSanitizer::cardNumber('4111111111111111'));
     }
 }
