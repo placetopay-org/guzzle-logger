@@ -10,7 +10,17 @@ enum ValueSanitizer: string
 
     public static function cardNumber(string $value): string
     {
-        return preg_replace('/(\d{6})(\d{3,9})(\d{4})/', '$1*****$3', $value);
+        $length = strlen($value);
+
+        if ($length <= 5) {
+            return substr($value, 0, 1) . str_repeat('*', $length - 1);
+        }
+
+        if ($length <= 11) {
+            return substr($value, 0, 1) . str_repeat('*', $length - 2) . substr($value, -1);
+        }
+
+        return substr($value, 0, 6) . str_repeat('*', $length - 10) . substr($value, -4);
     }
 
     public static function default(): string
