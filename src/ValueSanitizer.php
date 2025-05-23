@@ -13,14 +13,14 @@ enum ValueSanitizer: string
         $length = strlen($value);
 
         if ($length <= 5) {
-            return substr($value, 0, 1) . str_repeat('*', $length - 1);
+            return substr($value, 0, 1).str_repeat('*', $length - 1);
         }
 
         if ($length <= 11) {
-            return substr($value, 0, 1) . str_repeat('*', $length - 2) . substr($value, -1);
+            return substr($value, 0, 1).str_repeat('*', $length - 2).substr($value, -1);
         }
 
-        return substr($value, 0, 6) . str_repeat('*', $length - 10) . substr($value, -4);
+        return substr($value, 0, 6).str_repeat('*', $length - 10).substr($value, -4);
     }
 
     public static function default(): string
