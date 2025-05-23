@@ -194,6 +194,47 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertNotNull($this->logger->records[1]['context']['uri']);
     }
 
+    public function test_logs_error_when_json_decode_fails_in_response_body(): void
+    {
+        $this->appendResponse(
+            headers: ['Content-Type' => 'text/html'],
+            body: 'JSON not valid <html>'
+        )->getClient()->get('/');
+
+        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+
+        $responseContext = $this->logger->records[1]['context']['response'];
+        $this->assertSame('Failed to decode JSON from body: JSON not valid <html>', $responseContext['body']);
+    }
+
+    public function test_logs_summary_body_is_empty(): void
+    {
+        $this->appendResponse()->getClient()->get('/');
+
+        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+
+        $responseContext = $this->logger->records[1]['context']['response'];
+        $this->assertSame('Failed empty response body', $responseContext['body']);
+    }
+
+    public function test_logs_summary_when_json_decode_fails_and_truncates_body(): void
+    {
+        $this->appendResponse(
+            headers: ['Content-Type' => 'text/plain'],
+            body: str_repeat('A', 131)
+        )->getClient()->get('/');
+
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $responseContext = $this->logger->records[1]['context']['response'];
+
+        $this->assertStringContainsString(
+            'Failed to decode JSON from body: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (truncated...)',
+            $responseContext['body']
+        );
+    }
+
     private function appendResponse(
         int $code = 200,
         array $headers = [],

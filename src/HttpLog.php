@@ -9,10 +9,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
-class HttpLog
+readonly class HttpLog
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
+        private LoggerInterface $logger,
     ) {
     }
 
@@ -80,7 +80,7 @@ class HttpLog
         return [
             'response' => array_filter([
                 'url' => $request->getUri()->__toString(),
-                'body' => $response->getBody()->getSize() > 0 ? $this->formatBody($response) : null,
+                'body' => $this->formatBody($response),
                 'status_code' => $response->getStatusCode(),
                 'headers' => $response->getHeaders(),
                 'version' => 'HTTP/'.$response->getProtocolVersion(),
@@ -99,6 +99,22 @@ class HttpLog
             return $json;
         }
 
-        return 'Could not json decode body';
+        if (strlen($body) === 0) {
+            return 'Failed empty response body';
+        }
+
+        return 'Failed to decode JSON from body: '.self::bodySummary($body);
+    }
+
+    private static function bodySummary(string $body): string
+    {
+        $size = strlen($body);
+
+        $summary = mb_substr($body, 0, 120);
+        if ($size > 120) {
+            $summary .= ' (truncated...)';
+        }
+
+        return $summary;
     }
 }
