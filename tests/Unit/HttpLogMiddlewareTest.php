@@ -216,7 +216,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
-        $this->assertSame('Failed empty response body', $responseContext['body']);
+        $this->assertSame('Failed empty body', $responseContext['body']);
     }
 
     public function test_logs_summary_when_json_decode_fails_and_truncates_body(): void
