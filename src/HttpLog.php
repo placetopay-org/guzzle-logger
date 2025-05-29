@@ -18,7 +18,7 @@ readonly class HttpLog
 
     public function log(
         RequestInterface $request,
-        ResponseInterface $response = null,
+        ?ResponseInterface $response = null,
         ?Throwable $exception = null,
         ?TransferStats $stats = null,
     ): void {
@@ -100,7 +100,7 @@ readonly class HttpLog
         }
 
         if (strlen($body) === 0) {
-            return 'Failed empty response body';
+            return 'Failed empty body';
         }
 
         return 'Failed to decode JSON from body: '.self::bodySummary($body);
