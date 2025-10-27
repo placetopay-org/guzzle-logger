@@ -14,20 +14,20 @@ use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
 use PlacetoPay\GuzzleLogger\ValueSanitizer;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
-use Psr\Log\Test\TestLogger;
+use Tests\Support\HttpTestLogger;
 
 class HttpLogMiddlewareTest extends TestCase
 {
     private MockHandler $mockHandler;
 
-    private TestLogger $logger;
+    private HttpTestLogger $logger;
 
     #[\Override]
     public function setUp(): void
     {
         parent::setUp();
         $this->mockHandler = new MockHandler();
-        $this->logger = new TestLogger();
+        $this->logger = new HttpTestLogger();
     }
 
     public function test_log_successful_transaction_with_default_message(): void
