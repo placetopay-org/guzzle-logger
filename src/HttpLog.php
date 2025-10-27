@@ -68,7 +68,7 @@ readonly class HttpLog
         return [
             'request' => array_filter([
                 'url' => $request->getUri()->__toString(),
-                'body' => $request->getBody()->getSize() > 0 ? $this->formatBody($request) : null,
+                'body' => $this->formatRequestBody($request),
                 'method' => $request->getMethod(),
                 'headers' => $request->getHeaders(),
                 'version' => 'HTTP/'.$request->getProtocolVersion(),
@@ -81,7 +81,7 @@ readonly class HttpLog
         return [
             'response' => array_filter([
                 'url' => $request->getUri()->__toString(),
-                'body' => $this->formatBody($response),
+                'body' => $this->formatResponseBody($response),
                 'status_code' => $response->getStatusCode(),
                 'headers' => $response->getHeaders(),
                 'version' => 'HTTP/'.$response->getProtocolVersion(),
@@ -90,18 +90,36 @@ readonly class HttpLog
         ];
     }
 
-    private function formatBody(MessageInterface $response): array|string
+    private function formatRequestBody(RequestInterface $request): null|array|string
     {
-        $stream = $response->getBody();
-        $body = Utils::copyToString($stream);
-
-        if ($stream->isSeekable()) {
-            $stream->rewind();
+        if ($request->getBody()->isSeekable() === false || $request->getBody()->isReadable() === false) {
+            return 'GuzzleLogger  can not log request because the body is not seekable/readable.';
         }
 
-        $json = json_decode($body, true);
+        $stream = $request->getBody();
+        $stream->rewind();
+        $body = Utils::copyToString($stream);
+        $stream->rewind();
 
-        if (! empty($json)) {
+        if (empty($body)) {
+            return null;
+        }
+
+        return json_decode($body, true) ?? 'Failed to decode JSON from body: '.self::bodySummary($body);
+    }
+
+    private function formatResponseBody(MessageInterface $response): array|string
+    {
+        if ($response->getBody()->isSeekable() === false || $response->getBody()->isReadable() === false) {
+            return 'GuzzleLogger can not log response because the body is not seekable/readable.';
+        }
+
+        $stream = $response->getBody();
+        $stream->rewind();
+        $body = Utils::copyToString($stream);
+        $stream->rewind();
+
+        if ($json = json_decode($body, true)) {
             return $json;
         }
 

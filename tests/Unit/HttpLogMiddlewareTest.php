@@ -8,7 +8,9 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
+use PlacetoPay\GuzzleLogger\HttpLog;
 use PlacetoPay\GuzzleLogger\LoggerWithSanitizer;
 use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
 use PlacetoPay\GuzzleLogger\ValueSanitizer;
@@ -252,6 +254,54 @@ class HttpLogMiddlewareTest extends TestCase
         $response = $client->get('/');
         $actualBody = json_decode($response->getBody()->getContents(), true);
         $this->assertSame($expectedBody, $actualBody);
+    }
+
+    public function test_logger_does_not_consume_request_body(): void
+    {
+        $expectedBody = ['foo' => 'bar'];
+        $bodyStream = Utils::streamFor(json_encode($expectedBody));
+
+        $request = new Request('POST', '/test', ['Content-Type' => 'application/json'], $bodyStream);
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request);
+
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('Guzzle HTTP Request', $logger->records[0]['message']);
+        $this->assertSame('bar', $logger->records[0]['context']['request']['body']['foo']);
+        $this->assertSame(json_encode($expectedBody), $request->getBody()->getContents());
+    }
+
+    public function test_logger_handles_non_seekable_request_body(): void
+    {
+        $nonSeekableStream = fopen('php://output', 'w');
+        $request = new Request('POST', '/non-seekable', [], $nonSeekableStream);
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request);
+
+        $this->assertSame(
+            'GuzzleLogger  can not log request because the body is not seekable/readable.',
+            $logger->records[0]['context']['request']['body']
+        );
+    }
+
+    public function test_logger_handles_non_seekable_response_body(): void
+    {
+        $nonSeekableStream = fopen('php://output', 'w');
+        $response = new Response(200, ['Content-Type' => 'application/json'], $nonSeekableStream);
+        $request = new Request('GET', '/non-seekable');
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request, $response);
+
+        $this->assertSame(
+            'GuzzleLogger can not log response because the body is not seekable/readable.',
+            $logger->records[1]['context']['response']['body']
+        );
     }
 
     private function appendResponse(
