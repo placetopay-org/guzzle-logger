@@ -1,0 +1,35 @@
+name: SonarCloud analysis
+
+on:
+  push:
+    branches: [ "feat/sonar-update" ]
+  pull_request:
+    branches: [ "feat/sonar-update" ]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read # allows SonarCloud to decorate PRs with analysis results
+
+jobs:
+  sonarqube:
+    # Run when not a forked PR:
+    # - If event is not a pull_request (e.g., push), run.
+    # - If event is pull_request, run only when the PR head repo is NOT a fork.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Analyze with SonarCloud
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=placetopay-org_guzzle-logger
+            -Dsonar.organization=placetopay
+          # When you need the analysis to take place in a directory other than the one from which it was launched, default is .
+          projectBaseDir: src
