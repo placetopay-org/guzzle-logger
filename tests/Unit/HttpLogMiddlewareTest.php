@@ -235,6 +235,25 @@ class HttpLogMiddlewareTest extends TestCase
         );
     }
 
+    public function test_logger_does_not_consume_response_body(): void
+    {
+        $expectedBody = ['hello' => 'world'];
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode($expectedBody))
+            ->getClient()
+            ->get('/', ['headers' => ['Accept' => 'application/json']]);
+
+        $this->assertCount(2, $this->logger->records);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('world', $this->logger->records[1]['context']['response']['body']['hello']);
+
+        $client = $this->getClient();
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode($expectedBody));
+
+        $response = $client->get('/');
+        $actualBody = json_decode($response->getBody()->getContents(), true);
+        $this->assertSame($expectedBody, $actualBody);
+    }
+
     private function appendResponse(
         int $code = 200,
         array $headers = [],

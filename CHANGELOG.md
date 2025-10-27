@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed deprecated explicit nullable parameter in `HttpLog::log
 - Updated log message in `HttpLog::formatBody` from 'Failed empty response body' to 'Failed empty body'
 
+## [2.0.3] - 2025-10-27
+
+### Fixed
+- Resolved a stream handling issue in the logger middleware that caused empty response bodies.
+
 ## [2.0.2] - 2025-05-23
 
 ### Changed

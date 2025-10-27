@@ -2,6 +2,7 @@
 
 namespace PlacetoPay\GuzzleLogger;
 
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\TransferStats;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
@@ -91,7 +92,12 @@ readonly class HttpLog
 
     private function formatBody(MessageInterface $response): array|string
     {
-        $body = $response->getBody()->__toString();
+        $stream = $response->getBody();
+        $body = Utils::copyToString($stream);
+
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
 
         $json = json_decode($body, true);
 
