@@ -76,7 +76,7 @@ class HttpLogMiddlewareTest extends TestCase
         // Assert Request
         $this->assertSame('info', $this->logger->records[0]['level']);
         $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertFalse(isset($this->logger->records[0]['context']['request']['body']));
+        $this->assertSame('Empty content', $this->logger->records[0]['context']['request']['body']);
 
         // Assert Response
         $this->assertSame('info', $this->logger->records[1]['level']);
@@ -207,7 +207,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
-        $this->assertSame('Failed to decode JSON from body: JSON not valid <html>', $responseContext['body']);
+        $this->assertSame('Raw content summary: JSON not valid <html>', $responseContext['body']);
     }
 
     public function test_logs_summary_body_is_empty(): void
@@ -218,7 +218,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
-        $this->assertSame('Failed empty body', $responseContext['body']);
+        $this->assertSame('Empty content', $responseContext['body']);
     }
 
     public function test_logs_summary_when_json_decode_fails_and_truncates_body(): void
@@ -232,7 +232,7 @@ class HttpLogMiddlewareTest extends TestCase
         $responseContext = $this->logger->records[1]['context']['response'];
 
         $this->assertStringContainsString(
-            'Failed to decode JSON from body: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (truncated...)',
+            'Raw content summary: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (truncated...)',
             $responseContext['body']
         );
     }
@@ -283,7 +283,7 @@ class HttpLogMiddlewareTest extends TestCase
         $log->log($request);
 
         $this->assertSame(
-            'GuzzleLogger  can not log request because the body is not seekable/readable.',
+            'GuzzleLogger can not log response/request because the body is not seekable/readable.',
             $logger->records[0]['context']['request']['body']
         );
     }
@@ -299,7 +299,7 @@ class HttpLogMiddlewareTest extends TestCase
         $log->log($request, $response);
 
         $this->assertSame(
-            'GuzzleLogger can not log response because the body is not seekable/readable.',
+            'GuzzleLogger can not log response/request because the body is not seekable/readable.',
             $logger->records[1]['context']['response']['body']
         );
     }
