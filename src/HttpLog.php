@@ -2,6 +2,7 @@
 
 namespace PlacetoPay\GuzzleLogger;
 
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\TransferStats;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\RequestInterface;
@@ -67,7 +68,7 @@ readonly class HttpLog
         return [
             'request' => array_filter([
                 'url' => $request->getUri()->__toString(),
-                'body' => $request->getBody()->getSize() > 0 ? $this->formatBody($request) : null,
+                'body' => $this->formatBody($request),
                 'method' => $request->getMethod(),
                 'headers' => $request->getHeaders(),
                 'version' => 'HTTP/'.$request->getProtocolVersion(),
@@ -89,21 +90,23 @@ readonly class HttpLog
         ];
     }
 
-    private function formatBody(MessageInterface $response): array|string
+    private function formatBody(MessageInterface $value): array|string
     {
-        $body = $response->getBody()->__toString();
+        if ($value->getBody()->isSeekable() === false || $value->getBody()->isReadable() === false) {
+            return 'GuzzleLogger can not log response/request because the body is not seekable/readable.';
+        }
+
+        $stream = $value->getBody();
+        $stream->rewind();
+        $body = Utils::copyToString($stream);
+        $stream->rewind();
+
+        if (empty($body)) {
+            return 'Empty content';
+        }
 
         $json = json_decode($body, true);
-
-        if (! empty($json)) {
-            return $json;
-        }
-
-        if (strlen($body) === 0) {
-            return 'Failed empty body';
-        }
-
-        return 'Failed to decode JSON from body: '.self::bodySummary($body);
+        return $json ?? self::bodySummary($body);
     }
 
     private static function bodySummary(string $body): string
@@ -115,6 +118,6 @@ readonly class HttpLog
             $summary .= ' (truncated...)';
         }
 
-        return $summary;
+        return "Raw content summary: $summary";
     }
 }

@@ -8,26 +8,28 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
+use PlacetoPay\GuzzleLogger\HttpLog;
 use PlacetoPay\GuzzleLogger\LoggerWithSanitizer;
 use PlacetoPay\GuzzleLogger\Middleware\HttpLogMiddleware;
 use PlacetoPay\GuzzleLogger\ValueSanitizer;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
-use Psr\Log\Test\TestLogger;
+use Tests\Support\HttpTestLogger;
 
 class HttpLogMiddlewareTest extends TestCase
 {
     private MockHandler $mockHandler;
 
-    private TestLogger $logger;
+    private HttpTestLogger $logger;
 
     #[\Override]
     public function setUp(): void
     {
         parent::setUp();
         $this->mockHandler = new MockHandler();
-        $this->logger = new TestLogger();
+        $this->logger = new HttpTestLogger();
     }
 
     public function test_log_successful_transaction_with_default_message(): void
@@ -74,7 +76,7 @@ class HttpLogMiddlewareTest extends TestCase
         // Assert Request
         $this->assertSame('info', $this->logger->records[0]['level']);
         $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertFalse(isset($this->logger->records[0]['context']['request']['body']));
+        $this->assertSame('Empty content', $this->logger->records[0]['context']['request']['body']);
 
         // Assert Response
         $this->assertSame('info', $this->logger->records[1]['level']);
@@ -205,7 +207,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
-        $this->assertSame('Failed to decode JSON from body: JSON not valid <html>', $responseContext['body']);
+        $this->assertSame('Raw content summary: JSON not valid <html>', $responseContext['body']);
     }
 
     public function test_logs_summary_body_is_empty(): void
@@ -216,7 +218,7 @@ class HttpLogMiddlewareTest extends TestCase
         $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
-        $this->assertSame('Failed empty body', $responseContext['body']);
+        $this->assertSame('Empty content', $responseContext['body']);
     }
 
     public function test_logs_summary_when_json_decode_fails_and_truncates_body(): void
@@ -230,8 +232,75 @@ class HttpLogMiddlewareTest extends TestCase
         $responseContext = $this->logger->records[1]['context']['response'];
 
         $this->assertStringContainsString(
-            'Failed to decode JSON from body: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (truncated...)',
+            'Raw content summary: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA (truncated...)',
             $responseContext['body']
+        );
+    }
+
+    public function test_logger_does_not_consume_response_body(): void
+    {
+        $expectedBody = ['hello' => 'world'];
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode($expectedBody))
+            ->getClient()
+            ->get('/', ['headers' => ['Accept' => 'application/json']]);
+
+        $this->assertCount(2, $this->logger->records);
+        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('world', $this->logger->records[1]['context']['response']['body']['hello']);
+
+        $client = $this->getClient();
+        $this->appendResponse(headers: ['Content-Type' => 'application/json'], body: json_encode($expectedBody));
+
+        $response = $client->get('/');
+        $actualBody = json_decode($response->getBody()->getContents(), true);
+        $this->assertSame($expectedBody, $actualBody);
+    }
+
+    public function test_logger_does_not_consume_request_body(): void
+    {
+        $expectedBody = ['foo' => 'bar'];
+        $bodyStream = Utils::streamFor(json_encode($expectedBody));
+
+        $request = new Request('POST', '/test', ['Content-Type' => 'application/json'], $bodyStream);
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request);
+
+        $this->assertCount(1, $logger->records);
+        $this->assertSame('Guzzle HTTP Request', $logger->records[0]['message']);
+        $this->assertSame('bar', $logger->records[0]['context']['request']['body']['foo']);
+        $this->assertSame(json_encode($expectedBody), $request->getBody()->getContents());
+    }
+
+    public function test_logger_handles_non_seekable_request_body(): void
+    {
+        $nonSeekableStream = fopen('php://output', 'w');
+        $request = new Request('POST', '/non-seekable', [], $nonSeekableStream);
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request);
+
+        $this->assertSame(
+            'GuzzleLogger can not log response/request because the body is not seekable/readable.',
+            $logger->records[0]['context']['request']['body']
+        );
+    }
+
+    public function test_logger_handles_non_seekable_response_body(): void
+    {
+        $nonSeekableStream = fopen('php://output', 'w');
+        $response = new Response(200, ['Content-Type' => 'application/json'], $nonSeekableStream);
+        $request = new Request('GET', '/non-seekable');
+
+        $logger = new HttpTestLogger();
+        $log = new HttpLog($logger);
+        $log->log($request, $response);
+
+        $this->assertSame(
+            'GuzzleLogger can not log response/request because the body is not seekable/readable.',
+            $logger->records[1]['context']['response']['body']
         );
     }
 
