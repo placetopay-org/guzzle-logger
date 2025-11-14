@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.0.5] - 2025-11-14
 
 ### Changed
-- Updated Guzzle log prefix from Guzzle HTTP Request to HTTP Req for shorter and clearer logging.
+- Shortened Guzzle log prefixes to HTTP Req, HTTP Res, HTTP Stats, and HTTP Except.
 
 ## [2.0.4] - 2025-10-27
 
