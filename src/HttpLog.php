@@ -38,12 +38,12 @@ readonly class HttpLog
 
     private function logRequest(RequestInterface $request): void
     {
-        $this->logger->info('Guzzle HTTP Request', $this->getRequestContext($request));
+        $this->logger->info('HTTP Req', $this->getRequestContext($request));
     }
 
     private function logResponse(RequestInterface $request, ResponseInterface $response): void
     {
-        $this->logger->info('Guzzle HTTP Response', $this->getResponseContext($request, $response));
+        $this->logger->info('HTTP Res', $this->getResponseContext($request, $response));
     }
 
     private function logException(?Throwable $exception): void
@@ -52,12 +52,12 @@ readonly class HttpLog
             return;
         }
 
-        $this->logger->error('Guzzle HTTP Exception', ['exception' => $exception]);
+        $this->logger->error('HTTP Except', ['exception' => $exception]);
     }
 
     private function logStats(TransferStats $stats): void
     {
-        $this->logger->debug('Guzzle HTTP statistics', [
+        $this->logger->debug('HTTP Stats', [
             'time' => $stats->getTransferTime(),
             'uri' => $stats->getEffectiveUri(),
         ]);
@@ -106,6 +106,7 @@ readonly class HttpLog
         }
 
         $json = json_decode($body, true);
+
         return $json ?? self::bodySummary($body);
     }
 

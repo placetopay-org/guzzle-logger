@@ -45,7 +45,7 @@ class HttpLogMiddlewareTest extends TestCase
 
         // Assert Request
         $this->assertSame('info', $this->logger->records[0]['level']);
-        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('HTTP Req', $this->logger->records[0]['message']);
         $this->assertSame('GET', $this->logger->records[0]['context']['request']['method']);
         $this->assertSame('https://example.com/', $this->logger->records[0]['context']['request']['url']);
         $this->assertSame('HTTP/1.1', $this->logger->records[0]['context']['request']['version']);
@@ -54,7 +54,7 @@ class HttpLogMiddlewareTest extends TestCase
 
         // Assert Response
         $this->assertSame('info', $this->logger->records[1]['level']);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
         $this->assertSame(['Content-Type' => ['application/json']], $this->logger->records[1]['context']['response']['headers']);
         $this->assertSame('https://example.com/', $this->logger->records[1]['context']['response']['url']);
         $this->assertSame(200, $this->logger->records[1]['context']['response']['status_code']);
@@ -75,12 +75,12 @@ class HttpLogMiddlewareTest extends TestCase
 
         // Assert Request
         $this->assertSame('info', $this->logger->records[0]['level']);
-        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
+        $this->assertSame('HTTP Req', $this->logger->records[0]['message']);
         $this->assertSame('Empty content', $this->logger->records[0]['context']['request']['body']);
 
         // Assert Response
         $this->assertSame('info', $this->logger->records[1]['level']);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
         $this->assertFalse(isset($this->logger->records[0]['context']['response']['body']));
     }
 
@@ -91,8 +91,8 @@ class HttpLogMiddlewareTest extends TestCase
         } catch (\Exception) {
         }
 
-        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertEquals('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertEquals('HTTP Req', $this->logger->records[0]['message']);
+        $this->assertEquals('HTTP Res', $this->logger->records[1]['message']);
         $this->assertSame(500, $this->logger->records[1]['context']['response']['status_code']);
         $this->assertSame('Internal Server Error', $this->logger->records[1]['context']['response']['message']);
     }
@@ -106,8 +106,8 @@ class HttpLogMiddlewareTest extends TestCase
         } catch (\Exception) {
         }
 
-        $this->assertEquals('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertEquals('Guzzle HTTP Exception', $this->logger->records[1]['message']);
+        $this->assertEquals('HTTP Req', $this->logger->records[0]['message']);
+        $this->assertEquals('HTTP Except', $this->logger->records[1]['message']);
 
         $exception = $this->logger->records[1]['context']['exception'];
         $this->assertInstanceOf(TransferException::class, $exception);
@@ -132,8 +132,8 @@ class HttpLogMiddlewareTest extends TestCase
             ->getClient(logger: $logger)
             ->get('/');
 
-        $this->assertSame('[company/library] Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertSame('[company/library] Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('[company/library] HTTP Req', $this->logger->records[0]['message']);
+        $this->assertSame('[company/library] HTTP Res', $this->logger->records[1]['message']);
     }
 
     public function test_log_successful_transaction_sanitizing_data(): void
@@ -191,7 +191,7 @@ class HttpLogMiddlewareTest extends TestCase
             ]);
 
         $this->assertSame('debug', $this->logger->records[1]['level']);
-        $this->assertEquals('Guzzle HTTP statistics', $this->logger->records[1]['message']);
+        $this->assertEquals('HTTP Stats', $this->logger->records[1]['message']);
         $this->assertNotNull($this->logger->records[1]['context']['time']);
         $this->assertNotNull($this->logger->records[1]['context']['uri']);
     }
@@ -203,8 +203,8 @@ class HttpLogMiddlewareTest extends TestCase
             body: 'JSON not valid <html>'
         )->getClient()->get('/');
 
-        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Req', $this->logger->records[0]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
         $this->assertSame('Raw content summary: JSON not valid <html>', $responseContext['body']);
@@ -214,8 +214,8 @@ class HttpLogMiddlewareTest extends TestCase
     {
         $this->appendResponse()->getClient()->get('/');
 
-        $this->assertSame('Guzzle HTTP Request', $this->logger->records[0]['message']);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Req', $this->logger->records[0]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
 
         $responseContext = $this->logger->records[1]['context']['response'];
         $this->assertSame('Empty content', $responseContext['body']);
@@ -228,7 +228,7 @@ class HttpLogMiddlewareTest extends TestCase
             body: str_repeat('A', 131)
         )->getClient()->get('/');
 
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
         $responseContext = $this->logger->records[1]['context']['response'];
 
         $this->assertStringContainsString(
@@ -245,7 +245,7 @@ class HttpLogMiddlewareTest extends TestCase
             ->get('/', ['headers' => ['Accept' => 'application/json']]);
 
         $this->assertCount(2, $this->logger->records);
-        $this->assertSame('Guzzle HTTP Response', $this->logger->records[1]['message']);
+        $this->assertSame('HTTP Res', $this->logger->records[1]['message']);
         $this->assertSame('world', $this->logger->records[1]['context']['response']['body']['hello']);
 
         $client = $this->getClient();
@@ -268,7 +268,7 @@ class HttpLogMiddlewareTest extends TestCase
         $log->log($request);
 
         $this->assertCount(1, $logger->records);
-        $this->assertSame('Guzzle HTTP Request', $logger->records[0]['message']);
+        $this->assertSame('HTTP Req', $logger->records[0]['message']);
         $this->assertSame('bar', $logger->records[0]['context']['request']['body']['foo']);
         $this->assertSame(json_encode($expectedBody), $request->getBody()->getContents());
     }
