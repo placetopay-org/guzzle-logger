@@ -11,14 +11,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Validate composer.json and composer.lock
         run: composer validate --no-check-publish --strict
 
       - name: Cache Composer packages
         id: composer-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: vendor
           key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
@@ -26,35 +26,30 @@ jobs:
             ${{ runner.os }}-php-
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@2.25.1
-        with:
-          php-version: '8.3'
-
-      - name: 🛠️Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: ✔Check-Composer-audit
-        run: composer audit
-
-      - name: ✔Check-php-cs-fixer
-        run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
-
-      - name: ✔Check-phpstan
-        run: vendor/bin/phpstan analyse
-
-      - name: ✔Check-rector
-        run: vendor/bin/rector process --dry-run
-
-      - name: Setup PHP with Xdebug
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.5'
           coverage: xdebug
 
-      - name: 🧪Run test suite
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check-Composer-audit
+        run: composer audit
+
+      - name: Check-php-cs-fixer
+        run: vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php
+
+      - name: Check-phpstan
+        run: vendor/bin/phpstan analyse
+
+      - name: Check-rector
+        run: vendor/bin/rector process --dry-run
+
+      - name: Run test suite
         run: vendor/bin/phpunit --coverage-clover=tests/coverage/coverage.xml tests/
 
-      - name: ☁️SonarCloud Scan
+      - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v5.2.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

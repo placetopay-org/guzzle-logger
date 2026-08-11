@@ -11,4 +11,4 @@ $finder = Finder::create()
 
 return \ShiftCS\styles($finder, [
     'no_unused_imports' => true,
-]);
+])->setUnsupportedPhpVersionAllowed(true);

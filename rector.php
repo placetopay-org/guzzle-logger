@@ -15,6 +15,6 @@ return RectorConfig::configure()
     ->withRules([
         InlineConstructorDefaultToPropertyRector::class,
     ])->withSets([
-        LevelSetList::UP_TO_PHP_83,
+        LevelSetList::UP_TO_PHP_85,
     ])
     ->withCache('./.rector-cache', FileCacheStorage::class);

@@ -81,7 +81,7 @@ class ArrHelper
             $key = (string) $key;
         }
 
-        return array_key_exists($key, $array);
+        return array_key_exists((string) $key, $array);
     }
 
     /**
